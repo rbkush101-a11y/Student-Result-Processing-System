@@ -1,0 +1,88 @@
+SELECT 
+    s.student_id,
+    s.student_name,
+    sem.semester_name,
+    ROUND(SUM(g.grade_point * c.credits) / SUM(c.credits), 2) AS GPA
+FROM Grades g
+JOIN Students s ON g.student_id = s.student_id
+JOIN Courses c ON g.course_id = c.course_id
+JOIN Semesters sem ON g.semester_id = sem.semester_id
+GROUP BY s.student_id, sem.semester_name
+ORDER BY s.student_id;
+
+SELECT 
+    s.student_name,
+    sem.semester_name,
+    CASE 
+        WHEN MIN(g.grade_point) >= 5 THEN 'PASS'
+        ELSE 'FAIL'
+    END AS Result_Status
+FROM Grades g
+JOIN Students s ON g.student_id = s.student_id
+JOIN Semesters sem ON g.semester_id = sem.semester_id
+GROUP BY s.student_name, sem.semester_name;
+
+WITH GPA_Calc AS (
+    SELECT 
+        s.student_id,
+        s.student_name,
+        sem.semester_name,
+        ROUND(SUM(g.grade_point * c.credits) / SUM(c.credits), 2) AS GPA
+    FROM Grades g
+    JOIN Students s ON g.student_id = s.student_id
+    JOIN Courses c ON g.course_id = c.course_id
+    JOIN Semesters sem ON g.semester_id = sem.semester_id
+    GROUP BY s.student_id, sem.semester_name
+)
+SELECT 
+    student_id,
+    student_name,
+    semester_name,
+    GPA,
+    RANK() OVER (PARTITION BY semester_name ORDER BY GPA DESC) AS Rank_in_Semester
+FROM GPA_Calc
+ORDER BY semester_name, Rank_in_Semester;
+
+DELIMITER //
+CREATE TRIGGER trg_auto_gradepoint
+BEFORE INSERT ON Grades
+FOR EACH ROW
+BEGIN
+    IF NEW.marks_obtained >= 90 THEN
+        SET NEW.grade_point = 10;
+        SET NEW.letter_grade = 'A+';
+    ELSEIF NEW.marks_obtained >= 80 THEN
+        SET NEW.grade_point = 9;
+        SET NEW.letter_grade = 'A';
+    ELSEIF NEW.marks_obtained >= 70 THEN
+        SET NEW.grade_point = 8;
+        SET NEW.letter_grade = 'B';
+    ELSEIF NEW.marks_obtained >= 60 THEN
+        SET NEW.grade_point = 7;
+        SET NEW.letter_grade = 'C';
+    ELSEIF NEW.marks_obtained >= 50 THEN
+        SET NEW.grade_point = 6;
+        SET NEW.letter_grade = 'D';
+    ELSE
+        SET NEW.grade_point = 0;
+        SET NEW.letter_grade = 'F';
+    END IF;
+END;
+//
+DELIMITER ;
+
+SELECT 
+    s.student_name,
+    sem.semester_name,
+    ROUND(SUM(g.grade_point * c.credits) / SUM(c.credits), 2) AS GPA,
+    CASE 
+        WHEN MIN(g.grade_point) >= 5 THEN 'PASS'
+        ELSE 'FAIL'
+    END AS Result_Status
+FROM Grades g
+JOIN Students s ON g.student_id = s.student_id
+JOIN Courses c ON g.course_id = c.course_id
+JOIN Semesters sem ON g.semester_id = sem.semester_id
+GROUP BY s.student_name, sem.semester_name
+ORDER BY sem.semester_name, GPA DESC;
+
