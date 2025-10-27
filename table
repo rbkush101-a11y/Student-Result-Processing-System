@@ -1,0 +1,37 @@
+-- 1. STUDENTS TABLE
+CREATE TABLE Students (
+    student_id INT PRIMARY KEY AUTO_INCREMENT,
+    student_name VARCHAR(100) NOT NULL,
+    department VARCHAR(50),
+    admission_year INT
+);
+
+-- 2. COURSES TABLE
+CREATE TABLE Courses (
+    course_id INT PRIMARY KEY AUTO_INCREMENT,
+    course_name VARCHAR(100) NOT NULL,
+    credits INT NOT NULL,
+    semester_id INT,
+    FOREIGN KEY (semester_id) REFERENCES Semesters(semester_id)
+);
+
+-- 3. SEMESTERS TABLE
+CREATE TABLE Semesters (
+    semester_id INT PRIMARY KEY AUTO_INCREMENT,
+    semester_name VARCHAR(50),
+    academic_year VARCHAR(10)
+);
+
+-- 4. GRADES TABLE
+CREATE TABLE Grades (
+    grade_id INT PRIMARY KEY AUTO_INCREMENT,
+    student_id INT,
+    course_id INT,
+    semester_id INT,
+    marks_obtained DECIMAL(5,2),
+    grade_point DECIMAL(3,2),
+    letter_grade VARCHAR(2),
+    FOREIGN KEY (student_id) REFERENCES Students(student_id),
+    FOREIGN KEY (course_id) REFERENCES Courses(course_id),
+    FOREIGN KEY (semester_id) REFERENCES Semesters(semester_id)
+);
